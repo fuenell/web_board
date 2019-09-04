@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>정보수정</title>
+    <script src="http://code.jquery.com/jquery-latest.min.js"></script>
+</head>
+<body>
+
+<header id="header">
+</header>
+
+<div>
+    비밀번호 : <input id="update-pw" type="password"><br>
+    비밀번호확인 : <input id="update-pw-cf" type="password"><br>
+    이름 : <input id="update-name" type="text"><br>
+    남<input type="radio" id="gender_1" name="gender" value="남자">
+    여<input type="radio" id="gender_2" name="gender" value="여자"><br>
+    나이 : <input id="update-age" type="number"><br>
+    프로필 : <input id="update-profile" type="file" accept=".jpg,.jpeg,.png"><br>
+    <button onclick="updateProfile()">수정</button>
+</div>
+<script>
+    let user_id;
+    let user_password;
+
+    async function updateProfile() {
+        // 값 불러오기
+        let pw = $('#update-pw').val();
+        let pw_cf = $('#update-pw-cf').val();
+        let name = $('#update-name').val();
+        let gender = $(":input:radio[name='gender']:checked").val();
+        let age = $('#update-age').val();
+
+        let jsonData = {
+            "id": user_id,
+            "name": name,
+            "gender": gender,
+            "age": age
+        };
+
+        // 비밀번호가 없으면 변경X
+        if (pw !== "") {
+            // 비밀번호 확인
+            if (pw !== pw_cf) {
+                alert("비빌번호를 확인해주세요");
+                return;
+            } else {
+                jsonData.pw = pw;
+            }
+        }
+
+        // 프로필 사진
+        let profile = $('#update-profile');
+        let profileResponse = null;
+        if (profile[0].files.length > 0) {
+            let formData = new FormData();
+            formData.append("srcFile", profile[0].files[0]);
+            await $.ajax({
+                url: '/attachment',
+                type: 'POST',
+                data: formData,
+                contentType: false,
+                processData: false,
+                success: function (response) {
+                    jsonData.profile = response.storagePath;
+                }
+            });
+        }
+
+        await $.ajax({
+            url: '/api/user/update',
+            type: 'PUT',
+            contentType: 'application/json',
+            data: JSON.stringify(jsonData),
+            success: function (response) {
+                if (response === null || response === '') {
+                    alert("수정 실패");
+                    return;
+                }
+                alert("수정 성공!");
+                window.location.href = "profile.html";
+            },
+            error: function (err) {
+            }
+        });
+    }
+
+    function getCookie(cookie_name) {
+        let x, y;
+        let val = document.cookie.split(';');
+
+        for (let i = 0; i < val.length; i++) {
+            x = val[i].substr(0, val[i].indexOf('='));
+            y = val[i].substr(val[i].indexOf('=') + 1);
+            x = x.replace(/^\s+|\s+$/g, ''); // 앞과 뒤의 공백 제거하기
+            if (x == cookie_name) {
+                return unescape(y); // unescape로 디코딩 후 값 리턴
+            }
+        }
+    }
+
+    async function setProfile() {
+        user_id = getCookie("current_user_id");
+        if (user_id === undefined) {
+            window.history.back();
+        }
+        await $.ajax({
+            url: '/api/user/select/' + user_id,
+            type: 'GET',
+            accept: 'application/json',
+            success: function (response) {
+                if (response === null || response === '') {
+                    alert("아이디 혹은 비밀번호를 다시 확인해주세요");
+                    return;
+                }
+                $("#update-name").val(response.name);
+                let gender = response.gender;
+                if (gender === "남자") {
+                    $("#gender_1").prop("checked", true);
+                } else {
+                    $("#gender_2").prop("checked", true);
+                }
+                $("#update-age").val(response.age);
+                user_password = response.pw;
+            },
+            error: function (err) {
+            }
+        });
+    }
+
+    function loadHeader() {
+        $("#header").load("/header.html");
+    }
+
+    setProfile();
+    loadHeader();
+</script>
+</body>
+</html>

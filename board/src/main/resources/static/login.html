@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>로그인</title>
+    <script src="http://code.jquery.com/jquery-latest.min.js"></script>
+</head>
+<body>
+
+<header id="header">
+</header>
+
+<div>
+    아이디 : <input id="id" type="text"><br>
+    비밀번호 : <input id="pw" type="password"><br>
+    <button onclick="login()">로그인</button>
+</div>
+<script>
+    async function login() {
+        let id = $('#id').val();
+        let pw = $('#pw').val();
+
+        let jsonData = {
+            "id": id,
+            "pw": pw
+        };
+
+        await $.ajax({
+            url: '/api/user/login',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(jsonData),
+            success: function (response) {
+                if (response === null || response === '') {
+                    alert("아이디 혹은 비밀번호를 다시 확인해주세요");
+                    return;
+                }
+                alert("로그인 성공!");
+                setCookie("current_user_id", response.id, 1);
+                setCookie("current_user_name", response.name, 1);
+                setCookie("current_user_gender", response.gender, 1);
+                setCookie("current_user_age", response.age, 1);
+                setCookie("current_user_profile", response.profile, 1);
+                window.history.back();
+            },
+            error: function (err) {
+            }
+        });
+
+    }
+
+    function setCookie(cookie_name, value, days) {
+        let exdate = new Date();
+        exdate.setDate(exdate.getDate() + days);
+        // 설정 일수만큼 현재시간에 만료값으로 지정
+
+        let cookie_value = escape(value) + ((days == null) ? '' : ';    expires=' + exdate.toUTCString());
+        document.cookie = cookie_name + '=' + cookie_value;
+    }
+
+    function loadHeader() {
+        $("#header").load("/header.html");
+    }
+
+    loadHeader();
+</script>
+</body>
+</html>

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>프로필</title>
+    <script src="http://code.jquery.com/jquery-latest.min.js"></script>
+</head>
+<body>
+
+<header id="header">
+</header>
+
+<div>
+    아이디 : <span id="user-id"></span><br>
+    이름 : <span id="user-name"></span><br>
+    성별 : <span id="user-gender"></span><br>
+    나이 : <span id="user-age"></span><br>
+    프로필사진 : <img id="user-profile"/><br>
+    총 추천수 : <span id="user-total-good"></span><br>
+
+    <input id="update-password" type="password" placeholder="비밀번호">
+    <button onClick="goUpdate()">수정 페이지로</button>
+</div>
+<script>
+
+    let user_id;
+    let user_password;
+
+    function goUpdate() {
+        let password = $("#update-password").val();
+        if (password === user_password) {
+            window.location.href = "update.html";
+        } else {
+            alert("비밀번호를 똑바로 입력해주셔야 수정이 가능합니다");
+        }
+    }
+
+    function getCookie(cookie_name) {
+        let x, y;
+        let val = document.cookie.split(';');
+
+        for (let i = 0; i < val.length; i++) {
+            x = val[i].substr(0, val[i].indexOf('='));
+            y = val[i].substr(val[i].indexOf('=') + 1);
+            x = x.replace(/^\s+|\s+$/g, ''); // 앞과 뒤의 공백 제거하기
+            if (x == cookie_name) {
+                return unescape(y); // unescape로 디코딩 후 값 리턴
+            }
+        }
+    }
+
+    async function setProfile() {
+        user_id = getCookie("current_user_id");
+        if (user_id === undefined) {
+            window.history.back();
+        }
+        await $.ajax({
+            url: '/api/user/select/' + user_id,
+            type: 'GET',
+            accept: 'application/json',
+            success: function (response) {
+                if (response === null || response === '') {
+                    alert("아이디 혹은 비밀번호를 다시 확인해주세요");
+                    return;
+                }
+                $("#user-id").html(response.id);
+                $("#user-name").html(response.name);
+                $("#user-gender").html(response.gender);
+                $("#user-age").html(response.age);
+                $("#user-profile").attr('src', '/download/' + user_id);
+                user_password = response.pw;
+            },
+            error: function (err) {
+            }
+        });
+        await $.ajax({
+            url: '/api/board/totalGood/' + user_id,
+            type: 'GET',
+            accept: 'application/json',
+            success: function (response) {
+                $("#user-total-good").html(response);
+            },
+            error: function (err) {
+            }
+        });
+    }
+
+    function loadHeader() {
+        $("#header").load("/header.html");
+    }
+
+    setProfile();
+    loadHeader();
+</script>
+</body>
+</html>

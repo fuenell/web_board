@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>전체 게시판</title>
+    <script src="http://code.jquery.com/jquery-latest.min.js"></script>
+</head>
+<body>
+
+<header id="header">
+</header>
+
+<section>
+    <a href="/write.html">
+        <button>글쓰기</button>
+    </a>
+    <div id="board-menu">
+        <select name="view-count" id="view-count" onchange="changeCount()">
+            <option value="10">10개씩 보기</option>
+            <option value="20">20개씩 보기</option>
+            <option value="30">30개씩 보기</option>
+        </select>
+        <select name="sort-method" id="sort-method" onchange="changeSort()">
+            <option value="latest">최신순</option>
+            <option value="best">추천순</option>
+        </select>
+    </div>
+    <br>
+    <div id="board-list">
+
+    </div>
+    <div id="board-list-index"></div>
+</section>
+
+<script>
+    let count = 10;
+    let currIndex = 1;
+    let grade = 0;
+    let sortMethod = "latest";  // 정렬 방법 (default는 최신순)
+
+    // 한번에 보여주는 개수가 변경됐을 때
+    function changeGrade(newGrade) {
+        grade = newGrade;
+        boardList();
+    }
+
+    // 한번에 보여주는 개수가 변경됐을 때
+    function changeCount() {
+        count = $('#view-count').val();
+        currIndex = 1;
+        boardList();
+    }
+
+    // 정렬방법 변경
+    function changeSort() {
+        sortMethod = $('#sort-method').val();
+        boardList();
+    }
+
+    // 게시판 인덱스 보여주기
+    function showIndex(n) {
+        $('#board-list-index').html(`<a onclick="setIndex(${currIndex - 1})"><</a>`);
+        for (let i = 0; i < n; i++) {
+            if (currIndex - 1 === i) {
+                $('#board-list-index').append(`<a onclick="setIndex(${i + 1})" style="color: red">${i + 1}</a>`);
+            } else {
+                $('#board-list-index').append(`<a onclick="setIndex(${i + 1})">${i + 1}</a>`);
+            }
+        }
+        $('#board-list-index').append(`<a onclick="setIndex(${currIndex + 1})">></a>`);
+    }
+
+    function setIndex(index) {
+        if (index <= 0)
+            index = 1;
+        currIndex = index;
+        boardList();
+    }
+
+    // 게시판 리스트에 글 append 하기
+    function addBoard(response) {
+        let date = new Date(response.created);
+        let format = date.yyyymmdd();
+
+        $('#board-list').append(
+            `<a href="view.html?board_id=${response.id}" id="line-form${response.id}" style="margin-bottom: 30px;margin-left:auto; margin-right:auto; width: 500px; display: block; border-bottom: 1px solid silver; background-color: white; ">
+                <div id="line${response.id}" >
+                    <div style="">작성자 : ${response.user_id}</div>
+                    <div style="">제목 : ${response.title}</div>
+                    <div style="">작성일 : ${format}</div>
+                    <div style="">추천수 : ${response.good}</div>
+                    <div style="">조회수 : ${response.hits}</div>
+                </div>
+            </a>`
+        );
+    }
+
+    // 게시판 불러오기
+    async function boardList() {
+        try {
+            // 학년 받아오기
+            let searchParams = new URLSearchParams(window.location.search);
+            if (searchParams.has('grade')) {
+                grade = parseInt(searchParams.get('grade'));
+            } else {
+                grade = 0;
+            }
+
+            // 불러오는 리스트 다르게
+            let response;
+            if (grade === 1 || grade === 2 || grade === 3) {
+                response = await $.get(`/api/board/select/${grade}`);
+            } else {
+                response = await $.get('/api/board/select');
+            }
+
+            // 정렬 방법에 따라 다르게 정렬
+            if (sortMethod === "latest") {
+                response.sort(function (a, b) {
+                    return a.created > b.created ? -1 : a.created > b.created ? 1 : 0;
+                });
+            } else if (sortMethod === "best") {
+                response.sort(function (a, b) {
+                    return a.good > b.good ? -1 : a.good > b.good ? 1 : 0;
+                });
+            }
+
+            $('#board-list').html("");
+
+            let indexCount = response.length / count;
+
+            if (currIndex - 1 > indexCount) {
+                currIndex -= 1;
+            }
+
+            showIndex(indexCount);
+
+            let startIndex = (currIndex - 1) * count;
+
+            for (let i = startIndex; i < startIndex + count; i++) {
+                if (i < response.length)
+                    addBoard(response[i]);
+                else
+                    break;
+            }
+        } catch (e) {
+            alert(e);
+        }
+    }
+
+    Date.prototype.yyyymmdd = function () {
+        var mm = this.getMonth() + 1; // getMonth() is zero-based
+        var dd = this.getDate();
+
+        return [this.getFullYear(),
+            (mm > 9 ? '' : '0') + mm,
+            (dd > 9 ? '' : '0') + dd
+        ].join('-');
+    };
+
+    function loadHeader() {
+        $("#header").load("/header.html");
+    }
+
+    loadHeader();
+    boardList();
+</script>
+
+</body>
+</html>

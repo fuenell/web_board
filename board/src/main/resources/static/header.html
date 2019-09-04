@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="http://code.jquery.com/jquery-latest.min.js"></script>
+</head>
+<body>
+<div id="header-container" style="background: black; ">
+    <div style="display: inline;">
+        <div style="display: inline;"><a href="/" style="color: white">전체</a></div>
+        <div style="display: inline;"><a href="/?grade=1" style="color: white">1학년</a></div>
+        <div style="display: inline;"><a href="/?grade=2" style="color: white">2학년</a></div>
+        <div style="display: inline;"><a href="/?grade=3" style="color: white">3학년</a></div>
+    </div>
+    <div style="display: inline;">
+        <div id="login-button" style="display: inline;">
+            <a href="/login.html">
+                <div style="display: inline;color: white">로그인</div>
+            </a>
+        </div>
+        <div id="join-button" style="display: inline;">
+            <a href="/join.html">
+                <div style="display: inline;color: white">회원가입</div>
+            </a>
+        </div>
+    </div>
+</div>
+</body>
+<script>
+    function getCookie(cookie_name) {
+        let x, y;
+        let val = document.cookie.split(';');
+
+        for (let i = 0; i < val.length; i++) {
+            x = val[i].substr(0, val[i].indexOf('='));
+            y = val[i].substr(val[i].indexOf('=') + 1);
+            x = x.replace(/^\s+|\s+$/g, ''); // 앞과 뒤의 공백 제거하기
+            if (x == cookie_name) {
+                return unescape(y); // unescape로 디코딩 후 값 리턴
+            }
+        }
+    }
+
+    function checkLogin() {
+        let id = getCookie("current_user_id");
+        if (id !== undefined) {
+            $('#login-button').html("<a href=''><div onclick='logout()' style=\"display: inline;color: white\">로그아웃</div></a>");
+            $('#join-button').html("<a href='profile.html'><div style=\"display: inline;color: white\">마이페이지</div></a>");
+        }
+    }
+
+    function logout() {
+        setCookie("current_user_id", "", -1);
+        setCookie("current_user_name", "", -1);
+        setCookie("current_user_gender", "", -1);
+        setCookie("current_user_age", "", -1);
+        setCookie("current_user_profile", "", -1);
+        window.location.href = '/';
+    }
+
+    function setCookie(cookie_name, value, days) {
+        let exdate = new Date();
+        exdate.setDate(exdate.getDate() + days);
+        // 설정 일수만큼 현재시간에 만료값으로 지정
+
+        let cookie_value = escape(value) + ((days == null) ? '' : ';    expires=' + exdate.toUTCString());
+        document.cookie = cookie_name + '=' + cookie_value;
+    }
+
+    checkLogin();
+</script>
+</html>

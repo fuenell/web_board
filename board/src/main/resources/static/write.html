@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>글쓰기</title>
+    <script src="http://code.jquery.com/jquery-latest.min.js"></script>
+</head>
+<body>
+<header id="header">
+</header>
+<div>
+    제목 : <input type="text" id="title"><br>
+    게시판 : <select name="grade" id="grade">
+    <option value="1">1학년</option>
+    <option value="2">2학년</option>
+    <option value="3">3학년</option>
+</select><br>
+    내용 : <br><textarea id="content"></textarea>
+    <button onclick="addBoard()">작성</button>
+</div>
+</body>
+<script>
+    let board_id = null;
+
+    function checkUpdate() {
+        // 수정인지 받아오기
+        let searchParams = new URLSearchParams(window.location.search);
+        if (searchParams.has('board_id')) {
+            board_id = parseInt(searchParams.get('board_id'));
+
+            $.ajax({
+                url: '/api/board/get/' + board_id,
+                type: 'GET',
+                accept: 'application/json',
+                success: function (response) {
+                    $("#title").val(response.title);
+                    $("#grade").val(response.grade);
+                    $("#content").val(response.content);
+                },
+                error: function (err) {
+                    alert("삭제된 글입니다");
+                    window.history.back();
+                }
+            });
+
+        } else {
+            board_id = null;
+        }
+    }
+
+    function getCookie(cookie_name) {
+        let x, y;
+        let val = document.cookie.split(';');
+
+        for (let i = 0; i < val.length; i++) {
+            x = val[i].substr(0, val[i].indexOf('='));
+            y = val[i].substr(val[i].indexOf('=') + 1);
+            x = x.replace(/^\s+|\s+$/g, ''); // 앞과 뒤의 공백 제거하기
+            if (x == cookie_name) {
+                return unescape(y); // unescape로 디코딩 후 값 리턴
+            }
+        }
+    }
+
+    function addBoard() {
+
+        let id = getCookie("current_user_id");
+        if (id === undefined) {
+            // 로그인 됨
+            alert("로그인 후 이용가능합니다");
+            return;
+        }
+
+        let title = $('#title').val();
+        let grade = $('#grade').val();
+        let content = $('#content').val();
+
+        let jsonData = {
+            "user_id": id,
+            "title": title,
+            "grade": grade,
+            "content": content
+        };
+
+        // 수정
+        if (board_id !== null) {
+            jsonData.id = board_id;
+            $.ajax({
+                url: '/api/board/update',
+                type: 'PUT',
+                contentType: 'application/json',
+                data: JSON.stringify(jsonData),
+                success: function (response) {
+                    alert("수정 성공");
+                    window.location.href = '/';
+                },
+                error: function (err) {
+                    alert("수정 실패");
+                }
+            });
+        }
+        // 글쓰기
+        else {
+            $.ajax({
+                url: '/api/board/insert',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(jsonData),
+                success: function (response) {
+                    alert("작성 완료");
+                    window.location.href = '/';
+                },
+                error: function (err) {
+                    alert("작성 실패");
+                }
+            });
+        }
+    }
+
+    function loadHeader() {
+        $("#header").load("/header.html");
+    }
+
+    loadHeader();
+    checkUpdate();
+</script>
+</html>

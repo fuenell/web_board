@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>회원가입</title>
+    <script src="http://code.jquery.com/jquery-latest.min.js"></script>
+</head>
+<body>
+
+<header id="header">
+</header>
+
+<div>
+    아이디 : <input id="id" type="text"><br>
+    비밀번호 : <input id="pw" type="password"><br>
+    비밀번호 확인 : <input id="pw-cf" type="password"><br>
+    이름 : <input id="name" type="text"><br>
+    남<input type="radio" name="gender" value="남자"> 여<input type="radio" name="gender" value="여자"><br>
+    나이 : <input id="age" type="number"><br>
+    프로필 : <input id="profile" type="file" accept=".jpg,.jpeg,.png"><br>
+    <button onclick="join()">회원가입</button>
+</div>
+<script>
+    async function join() {
+
+        // 값 불러오기
+        let id = $('#id').val();
+        let pw = $('#pw').val();
+        let pw_cf = $('#pw-cf').val();
+        let name = $('#name').val();
+        let gender = $(":input:radio[name='gender']:checked").val();
+        let age = $('#age').val();
+
+        // 비밀번호 확인
+        if (pw !== pw_cf) {
+            alert("비빌번호를 확인해주세요");
+            return;
+        }
+
+        // 프로필 사진
+        let profile = $('#profile');
+        let profileResponse = null;
+        if (profile[0].files.length > 0) {
+            let formData = new FormData();
+            formData.append("srcFile", profile[0].files[0]);
+            profileResponse = await $.ajax({
+                url: '/attachment',
+                type: 'POST',
+                data: formData,
+                contentType: false,
+                processData: false
+            });
+        }
+
+        let jsonData = {
+            "id": id,
+            "pw": pw,
+            "name": name,
+            "gender": gender,
+            "age": age,
+            "profile": profileResponse === null ? null : profileResponse.storagePath
+        };
+
+        await $.ajax({
+            url: '/api/user/insert',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(jsonData),
+            success: function (response) {
+                if (response === null || response === '') {
+                    alert("회원가입 실패 - 아이디 중복");
+                    return;
+                }
+                alert("회원가입 성공!");
+                window.history.back();
+            },
+            error: function (err) {
+            }
+        });
+
+    }
+
+    function loadHeader() {
+        $("#header").load("/header.html");
+    }
+
+    loadHeader();
+</script>
+</body>
+</html>
